@@ -143,6 +143,13 @@ pub struct Offer {
     pub host_id: Option<u64>,
     pub gpu_name: String,
     pub num_gpus: u32,
+    /// The share of the machine's GPUs this offer rents: 1.0 is the whole
+    /// machine, 0.125 one card of eight. On driver 580 and later NVENC
+    /// refuses to open a session (`NV_ENC_ERR_NO_ENCODE_DEVICE`) in a
+    /// container that holds only part of a machine, so a caller that encodes
+    /// should read this.
+    #[serde(default)]
+    pub gpu_frac: Option<f64>,
     /// VRAM per GPU, MiB.
     #[serde(default)]
     pub gpu_ram: f64,
@@ -283,6 +290,7 @@ mod tests {
         for offer in &parsed.offers {
             assert!(offer.id > 0);
             assert!(offer.num_gpus >= 1);
+            assert!(offer.gpu_frac.is_some_and(|f| f > 0.0 && f <= 1.0));
             assert!(offer.min_bid > 0.0);
             assert!(offer.min_bid_per_gpu() <= offer.min_bid);
             assert!(offer.extra.contains_key("gpu_arch"));
