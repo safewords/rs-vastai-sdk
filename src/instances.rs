@@ -135,6 +135,11 @@ pub struct Instance {
     pub start_date: Option<f64>,
     #[serde(default)]
     pub public_ipaddr: Option<String>,
+    /// Vast's ssh proxy, for [`RunType::Ssh`] instances.
+    #[serde(default)]
+    pub ssh_host: Option<String>,
+    #[serde(default)]
+    pub ssh_port: Option<u16>,
     #[serde(flatten)]
     pub extra: Map<String, Value>,
 }

@@ -112,6 +112,16 @@ impl Client {
         }
     }
 
+    /// Let `public_key` (an OpenSSH public key line) into an instance started
+    /// with [`crate::RunType::Ssh`].
+    pub async fn attach_ssh_key(&self, id: u64, public_key: &str) -> Result<(), Error> {
+        let path = format!("/instances/{id}/ssh/");
+        let body = serde_json::json!({ "ssh_key": public_key.trim() });
+        self.retrying(Method::POST, &path, Some(body))
+            .await
+            .map(drop)
+    }
+
     /// Change an interruptible instance's bid, **per GPU**, $/h.
     pub async fn change_bid(&self, id: u64, price_per_gpu: f64) -> Result<(), Error> {
         let path = format!("/instances/bid_price/{id}/");
