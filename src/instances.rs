@@ -150,9 +150,10 @@ pub enum InstanceStatus {
     /// Pulling the image or starting the container.
     Starting,
     Running,
-    /// Interruptible and stopped by the market: outbid, or the machine rented
-    /// on demand. Still billed for storage; resumes only if the bid wins
-    /// again.
+    /// Interruptible and stopped: outbid, or the machine rented on demand.
+    /// Still billed for storage; resumes only if the bid wins again. Vast
+    /// reports this exactly as it reports an interruptible instance its owner
+    /// stopped, so that reads as `Outbid` too.
     Outbid,
     /// Stopped because it was asked to be.
     Stopped,
@@ -181,13 +182,17 @@ impl Instance {
         if actual == "offline" {
             return InstanceStatus::Offline;
         }
-        if intended == "stopped" {
-            return InstanceStatus::Stopped;
-        }
-        // Asked to run but not running, as an interruptible: the market took
-        // it. Vast does not say "outbid" in a field of its own.
+        // An interruptible whose contract is stopped: the market took it.
+        // Vast says so in no field of its own, and it flips
+        // `intended_status` to "stopped" as well — observed live, an RTX 5070
+        // preempted when its machine was re-rented at twice the bid — so
+        // this has to come before the intended-stop check. The cost is that
+        // an interruptible instance you stopped yourself reads as outbid too.
         if self.is_bid && (state == "stopped" || msg.contains("outbid")) {
             return InstanceStatus::Outbid;
+        }
+        if intended == "stopped" {
+            return InstanceStatus::Stopped;
         }
         match actual {
             "running" => InstanceStatus::Running,
@@ -257,6 +262,19 @@ mod tests {
     }
 
     #[test]
+    fn a_preempted_interruptible_reads_as_outbid_although_vast_says_stopped() {
+        // The fields of a real preemption (instance 58593131, 2026-11-01): the
+        // machine was re-rented at $0.173 over a $0.085 bid. Vast flipped
+        // `intended_status` too, and left `min_bid` at the old floor.
+        let preempted = instance(json!({
+            "id": 58593131, "is_bid": true, "actual_status": "exited",
+            "intended_status": "stopped", "cur_state": "stopped", "next_state": "stopped",
+            "status_msg": "success, running ubuntu_24.04/ssh", "min_bid": 0.08,
+        }));
+        assert_eq!(preempted.status(), InstanceStatus::Outbid);
+    }
+
+    #[test]
     fn statuses_reduce_to_what_a_controller_acts_on() {
         let base = |extra: Value| {
             let mut v = json!({"id": 1, "is_bid": true, "intended_status": "running"});
@@ -286,10 +304,12 @@ mod tests {
             base(json!({"actual_status": "created", "status_msg": "Error response from daemon: pull access denied"})).status(),
             InstanceStatus::Failed
         );
-        assert_eq!(
-            base(json!({"intended_status": "stopped", "actual_status": "exited"})).status(),
-            InstanceStatus::Stopped
+        // An on-demand instance asked to stop is just stopped.
+        let stopped = instance(
+            json!({"id": 1, "is_bid": false, "intended_status": "stopped",
+            "actual_status": "exited", "cur_state": "stopped"}),
         );
+        assert_eq!(stopped.status(), InstanceStatus::Stopped);
         let on_demand = instance(
             json!({"id": 1, "is_bid": false, "intended_status": "running",
             "actual_status": "exited", "cur_state": "stopped"}),

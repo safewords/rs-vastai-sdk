@@ -62,6 +62,14 @@ bid wins again. `Instance::status()` reports that as `InstanceStatus::Outbid`,
 so a controller can raise the bid (`Client::change_bid`) or give up on the
 machine (`Client::destroy_instance`).
 
+Two things Vast does that are easy to get wrong:
+
+- A preempted instance has `intended_status: "stopped"`, exactly like one its
+  owner stopped. So any stopped interruptible instance reads as `Outbid`; if
+  you stop your own, track that yourself.
+- The instance's `min_bid` is not updated when it is outbid. What the machine
+  now costs is on its offer: search with `machine_id` to find out.
+
 ## Retries
 
 Reads, searches and idempotent writes (destroy, change bid, stop/start, logs)
