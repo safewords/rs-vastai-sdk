@@ -45,6 +45,17 @@ impl OfferQuery {
         q
     }
 
+    /// No default filters: rented and unrentable offers too. What a machine
+    /// you were just outbid on now costs is only on an offer like that.
+    pub fn including_rented() -> Self {
+        Self {
+            filters: Map::new(),
+            kind: OfferKind::OnDemand,
+            order: Vec::new(),
+            limit: None,
+        }
+    }
+
     pub fn kind(mut self, kind: OfferKind) -> Self {
         self.kind = kind;
         self
@@ -249,6 +260,14 @@ mod tests {
             .lte("num_gpus", 2)
             .to_body();
         assert_eq!(body["num_gpus"], json!({"gte": 1, "lte": 2}));
+    }
+
+    #[test]
+    fn including_rented_drops_the_default_filters() {
+        let body = OfferQuery::including_rented().eq("machine_id", 7).to_body();
+        assert!(body.get("rented").is_none());
+        assert!(body.get("rentable").is_none());
+        assert_eq!(body["machine_id"]["eq"], 7);
     }
 
     #[test]
