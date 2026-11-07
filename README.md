@@ -84,6 +84,11 @@ VAST_API_KEY=... cargo run --example market -- "RTX 4060" "L4"
 
 Read-only: prints your credit and the cheapest matching interruptible offers.
 
+## Feature docs
+
+How each part works, verified against the code with `path:line` references,
+and the known defects: [`docs/features/README.md`](docs/features/README.md).
+
 ## License
 
 MIT
