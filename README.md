@@ -89,6 +89,8 @@ Read-only: prints your credit and the cheapest matching interruptible offers.
 How each part works, verified against the code with `path:line` references,
 and the known defects: [`docs/features/README.md`](docs/features/README.md).
 
+What changed, newest first: [`CHANGELOG.md`](CHANGELOG.md).
+
 ## License
 
 MIT
