@@ -1,8 +1,8 @@
 # Instances: rent, inspect, re-bid, stop, logs, destroy
 
-> **Status:** PARTIAL — works as used in production; `Instance::status()` has known misreads (see Edge cases)
+> **Status:** PARTIAL — works for the common rent / poll / destroy loop; `Instance::status()` has known misreads (see Edge cases)
 > **Owners (code):** `src/instances.rs`, `src/client.rs:74-181`
-> **Related docs:** [client.md](./client.md), [offers.md](./offers.md), [repo README](../../README.md#interruptible-instances), [lewd.net transcoder-fleet.md — vast.ai fleet state](../../../../lewd/lewd.net/docs/features/transcoder-fleet.md#vastai-fleet-state), [transcoder vast-failover.md — Lifecycle](../../../../lewd/transcoder-microsvc/docs/vast-failover.md#lifecycle)
+> **Related docs:** [client.md](./client.md), [offers.md](./offers.md), [repo README](../../README.md#interruptible-instances)
 > **Last verified against code:** 2026-11-06 @ `f2167ff`
 
 ## Overview
@@ -10,10 +10,9 @@
 Everything after an offer is chosen: rent it (`create_instance`), find it
 again (`list_instances`, `get_instance`), reduce Vast's several status strings
 to one `InstanceStatus` a controller can act on, raise its bid, stop or start
-it, let an ssh key in, read its logs, and destroy it. The transcoder
-dispatcher rents one interruptible instance per transcode job and finds its
-rentals again by label (`lewd/transcoder-microsvc/crates/vast-fleet/src/lifecycle.rs:3-20`);
-what it decides per tick lives there, not here.
+it, let an ssh key in, read its logs, and destroy it. A typical controller
+rents one interruptible instance per job and finds its rentals again by
+label; what it decides on each poll is up to the caller, not this crate.
 
 ```mermaid
 flowchart LR
@@ -73,13 +72,12 @@ $/h), `min_bid`, `image_uuid`, `start_date` (Unix s), `public_ipaddr`,
 
 There is no call to set or change a label after rental, and no server-side
 label filter: labels are set in `CreateInstance` and matched client-side on
-`list_instances()` (the transcoder does exactly this with
-`safewords-transcoder:<nonce>`,
-`lewd/transcoder-microsvc/crates/vast-fleet/src/lifecycle.rs:16-28`).
+`list_instances()` (for example, label each rental `my-app:<nonce>` and
+match on the `my-app:` prefix).
 
 ### Flow
 
-Golden path, as the transcoder dispatcher and `examples/instance.rs` drive it:
+Golden path, as a typical controller and `examples/instance.rs` drive it:
 
 ```mermaid
 sequenceDiagram
@@ -125,8 +123,8 @@ first match wins:
 2. `actual_status == "offline"` → `Offline` (`:182-184`).
 3. `is_bid` and (`cur_state == "stopped"` or `status_msg` contains "outbid")
    → `Outbid` (`:191-193`). Before the intended-stop check because Vast flips
-   `intended_status` to `stopped` on preemption too — observed live on
-   instance 58593131, 2026-11-01 (`:185-190`, test `:264-275`).
+   `intended_status` to `stopped` on preemption too — observed on a live
+   preemption (`:185-190`, test `:264-275`).
 4. `intended_status` (default `running`) `== "stopped"` → `Stopped` (`:194-196`).
 5. `actual_status`: `running` → `Running`, `exited` → `Exited`, `stopped` →
    `Stopped`, anything else (including `null`, `created`, `loading`) →
@@ -164,21 +162,15 @@ exits with its contract stopped reads `Outbid`, not `Exited` (test
 
 ### Configuration
 
-None in the crate. Image, disk, label, bid and env are all caller-supplied;
-for the transcoder's values (`VAST_DISK_GB`, `VAST_IMAGE_LOGIN`, caps) see
-[vast-failover.md](../../../../lewd/transcoder-microsvc/docs/vast-failover.md)
-and the transcoder chart. `VAST_IMAGE_LOGIN` comes from Kubernetes Secret
-`transcoder-vast`, key `image-login`
-(`helm-charts/transcoder/templates/deployment-dispatcher.yaml:108-112`).
+None in the crate. Image, disk, label, bid, env and registry login are all
+caller-supplied.
 
 ### Edge cases & gotchas
 
 - **`CreateInstance`'s `Debug` prints secrets.** It derives `Debug`
   (`src/instances.rs:25`), so `{:?}` / `tracing`'s `?spec` shows
-  `image_login` (a registry password) and every `env` value. The transcoder
-  passes a worker token as `TRANSCODER_API_KEY` in `env`
-  (`lewd/transcoder-microsvc/crates/transcoder/src/vast.rs:1225`); it does not
-  currently log the spec, but nothing stops it. Medium.
+  `image_login` (a registry password) and every `env` value. Callers that
+  pass a token in `env` must not log the spec with `{:?}`. Medium.
 - **Rental is not retried, and a lost answer is ambiguous.** If
   `create_instance` fails with `Error::Transport`, Vast may or may not have
   rented. Before trying again, `list_instances()` and look for the label.

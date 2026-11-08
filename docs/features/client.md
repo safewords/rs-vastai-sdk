@@ -2,7 +2,7 @@
 
 > **Status:** STABLE
 > **Owners (code):** `src/client.rs`, `src/error.rs`, `src/lib.rs`
-> **Related docs:** [offers.md](./offers.md), [instances.md](./instances.md), [repo README](../../README.md#retries), [lewd.net transcoder-fleet.md](../../../../lewd/lewd.net/docs/features/transcoder-fleet.md)
+> **Related docs:** [offers.md](./offers.md), [instances.md](./instances.md), [repo README](../../README.md#retries)
 > **Last verified against code:** 2026-11-06 @ `f2167ff`
 
 ## Overview
@@ -74,7 +74,7 @@ Which calls retry:
 
 | Setting | Where | Notes |
 |---|---|---|
-| API key | passed to `Client::new` | The crate reads no environment itself. Its examples and the lib doc read **`VAST_API_KEY`** (`src/lib.rs:11`, `examples/market.rs:12`, `examples/instance.rs:21`). In production the transcoder dispatcher reads `VAST_API_KEY` (`lewd/transcoder-microsvc/crates/transcoder/src/vast.rs:245`), set by the transcoder chart from Kubernetes Secret **`transcoder-vast`, key `api-key`** (`helm-charts/transcoder/templates/deployment-dispatcher.yaml:100-104`, `helm-charts/transcoder/values-prod.yaml:171-177`). The registry pull login handed to rentals is the same Secret's key `image-login` (`VAST_IMAGE_LOGIN`). The transcoder repo's CI smoke uses the GitHub Actions secret `VAST_API_KEY`. |
+| API key | passed to `Client::new` | The crate reads no environment itself. Its examples and the lib doc read **`VAST_API_KEY`** (`src/lib.rs:11`, `examples/market.rs:12`, `examples/instance.rs:21`). Where the key comes from in a deployment (a secret store, an environment variable) is up to the caller. |
 | Base URL | `Client::with_base_url` | For a mock server or proxy |
 | Timeout | fixed | 60 s per request (`src/client.rs:50`); not configurable |
 | TLS | `Cargo.toml` | `reqwest` with `rustls-tls`, no default features |

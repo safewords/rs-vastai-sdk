@@ -9,11 +9,8 @@
 
 Thirteen unit tests, all offline, live beside the code they test. One real
 vast.ai response is checked in as a fixture. Two examples drive the real API
-with a real key: one read-only, one that spends money. The integration with
-real Vast behaviour is proven downstream, by the transcoder's `vast_smoke`
-example and its live tests
-(`lewd/transcoder-microsvc/crates/transcoder/examples/vast_smoke.rs`,
-`crates/transcoder/src/vast.rs:1724-1784`), not here.
+with a real key: one read-only, one that spends money. Nothing in this repo
+checks behaviour against the live API automatically.
 
 ```mermaid
 flowchart LR
@@ -48,7 +45,7 @@ flowchart LR
 | Test | `per_gpu_prices_divide_by_the_gpu_count` | `src/offers.rs:300-313` | Includes `storage_dph` and `num_gpus = 0` |
 | Test | `a_bid_rental_sends_the_price_and_the_env_as_an_object` | `src/instances.rs:230-251` | |
 | Test | `an_on_demand_rental_sends_no_price` | `src/instances.rs:253-262` | |
-| Test | `a_preempted_interruptible_reads_as_outbid_although_vast_says_stopped` | `src/instances.rs:264-275` | Real preemption fields, instance 58593131 |
+| Test | `a_preempted_interruptible_reads_as_outbid_although_vast_says_stopped` | `src/instances.rs:264-275` | Real preemption fields |
 | Test | `statuses_reduce_to_what_a_controller_acts_on` | `src/instances.rs:277-318` | Starting, Running, Outbid, Offline, Failed, Stopped, Exited |
 | Example | `market -- <gpu names…>` | `examples/market.rs` | Read-only: account credit, then the 15 cheapest interruptible offers with `reliability2 ≥ 0.97` |
 | Example | `instance -- rent <offer> <bid\|-> <disk_gb> <image> <pubkey file>` | `examples/instance.rs:30-60` | **Spends money.** Rents with `RunType::Ssh`, label `rs-vastai-sdk-example`, `cancel_unavailable`, then attaches the key. `-` rents on demand |
@@ -79,9 +76,8 @@ were not run for this doc.
 - No test covers `send`/`retrying`: retry counts, backoff, 404 → `None` /
   `Ok(())`, `success: false` → `Refused`, the empty-body → `Null` path, or
   `logs` polling.
-- No CI in this repository (no `.github/`). The consumer builds and tests
-  this crate as a dependency; a break here shows up there first. Per the
-  devenv rule for Rust trunks, run `cargo test --all-targets` before pushing.
+- No CI in this repository (no `.github/`). Run `cargo test --all-targets`
+  before pushing.
 
 ## History & references
 

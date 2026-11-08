@@ -230,12 +230,12 @@ mod tests {
     #[test]
     fn a_bid_rental_sends_the_price_and_the_env_as_an_object() {
         let body = CreateInstance {
-            image: "registry.example/transcoder:latest".into(),
+            image: "registry.example/worker:latest".into(),
             env: vec![("A".into(), "1 2".into()), ("B".into(), "x=y".into())],
             disk_gb: 40.0,
             label: Some("fleet".into()),
             bid_per_gpu: Some(0.11),
-            args: vec!["queue:work".into(), "--timeout=1800".into()],
+            args: vec!["serve".into(), "--port=8080".into()],
             image_login: Some("-u u -p p registry.example".into()),
             ..Default::default()
         }
@@ -245,7 +245,7 @@ mod tests {
         assert_eq!(body["price"], 0.11);
         assert_eq!(body["env"], json!({"A": "1 2", "B": "x=y"}));
         assert_eq!(body["runtype"], "args");
-        assert_eq!(body["args"], json!(["queue:work", "--timeout=1800"]));
+        assert_eq!(body["args"], json!(["serve", "--port=8080"]));
         assert_eq!(body["label"], "fleet");
         assert_eq!(body["image_login"], "-u u -p p registry.example");
     }
@@ -263,11 +263,11 @@ mod tests {
 
     #[test]
     fn a_preempted_interruptible_reads_as_outbid_although_vast_says_stopped() {
-        // The fields of a real preemption (instance 58593131, 2026-11-01): the
+        // The fields of a real preemption: the
         // machine was re-rented at $0.173 over a $0.085 bid. Vast flipped
         // `intended_status` too, and left `min_bid` at the old floor.
         let preempted = instance(json!({
-            "id": 58593131, "is_bid": true, "actual_status": "exited",
+            "id": 12345, "is_bid": true, "actual_status": "exited",
             "intended_status": "stopped", "cur_state": "stopped", "next_state": "stopped",
             "status_msg": "success, running ubuntu_24.04/ssh", "min_bid": 0.08,
         }));

@@ -2,7 +2,7 @@
 
 > **Status:** STABLE
 > **Owners (code):** `src/offers.rs`, `src/client.rs:65-72`
-> **Related docs:** [client.md](./client.md), [instances.md](./instances.md), [repo README](../../README.md#prices-and-units), [transcoder vast-failover.md](../../../../lewd/transcoder-microsvc/docs/vast-failover.md), [lewd.net transcoder-fleet.md — the vast.ai market](../../../../lewd/lewd.net/docs/features/transcoder-fleet.md#the-vastai-market-price--performance)
+> **Related docs:** [client.md](./client.md), [instances.md](./instances.md), [repo README](../../README.md#prices-and-units)
 > **Last verified against code:** 2026-11-06 @ `f2167ff`
 
 ## Overview
@@ -11,10 +11,8 @@
 `Client::search_offers` sends it and returns `Vec<Offer>`. An `Offer` is one
 rentable slice of a machine (`src/offers.rs:133-211`), typed for the fields
 worth deciding on, with everything else Vast sends kept in `Offer::extra`.
-The transcoder dispatcher uses it for its hourly market survey and to price a
-machine an instance was outbid on; `vast-fleet` scores and plans over `Offer`
-(`lewd/transcoder-microsvc/crates/vast-fleet/src/score.rs:28`,
-`planner.rs:16`, `pricing.rs:25`, `perf.rs:15`).
+A caller uses it to survey the market, to pick an offer to rent, and to
+price a machine an instance was outbid on.
 
 ```mermaid
 flowchart LR
@@ -99,11 +97,9 @@ neither.
   bid, never `min_bid`.
 - **`gpu_frac` and NVENC.** On driver 580+ NVENC refuses a session
   (`NV_ENC_ERR_NO_ENCODE_DEVICE`) in a container holding only part of a
-  machine (`src/offers.rs:146-150`); an encoder must want `gpu_frac ≈ 1.0`.
-  The transcoder applies this in `vast_fleet::gpu::nvenc_reachable`
-  (`gpu_frac >= 0.999`,
-  `lewd/transcoder-microsvc/crates/vast-fleet/src/gpu.rs:295-296`). The SDK
-  types the field but does not filter on it.
+  machine (`src/offers.rs:146-150`); an encoder must want `gpu_frac ≈ 1.0`
+  (in practice `gpu_frac >= 0.999`). The SDK types the field but does not
+  filter on it.
 - The same op on the same field overwrites: two `eq("x", …)` calls, or two
   `any_of` on one field, keep the last (`src/offers.rs:70`).
 - Unknown field names are sent as given; a typo is Vast's to ignore or refuse.
@@ -121,8 +117,6 @@ neither.
   outbid on.
 - `f2167ff` Type an offer's `gpu_frac`: NVENC on driver 580+ needs the whole
   machine.
-- The market itself (snapshot, price ÷ performance):
-  [vast-failover.md](../../../../lewd/transcoder-microsvc/docs/vast-failover.md).
 
 ## Proposed / Ideas (backlog)
 

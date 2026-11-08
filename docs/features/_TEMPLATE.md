@@ -37,8 +37,8 @@ then the branches that matter. A sequence or state diagram where it helps.
 
 ### Configuration
 
-Environment variables and config keys, defaults, where production sets them
-(the helm chart values).
+Environment variables and config keys, defaults, and where a deployment
+sets them.
 
 ### Edge cases & gotchas
 
