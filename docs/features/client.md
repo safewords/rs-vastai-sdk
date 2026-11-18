@@ -77,7 +77,7 @@ Which calls retry:
 | API key | passed to `Client::new` | The crate reads no environment itself. Its examples and the lib doc read **`VAST_API_KEY`** (`src/lib.rs:11`, `examples/market.rs:12`, `examples/instance.rs:21`). Where the key comes from in a deployment (a secret store, an environment variable) is up to the caller. |
 | Base URL | `Client::with_base_url` | For a mock server or proxy |
 | Timeout | fixed | 60 s per request (`src/client.rs:50`); not configurable |
-| TLS | `Cargo.toml` | `reqwest` with `rustls-tls`, no default features |
+| TLS | `Cargo.toml` | `reqwest` 0.13 with `rustls` (aws-lc-rs, platform verifier), no default features |
 
 ### Edge cases & gotchas
 

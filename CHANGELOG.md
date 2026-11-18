@@ -16,3 +16,9 @@ pin a git revision. History is in `git log`.
 - An offer's `gpu_frac` is typed, since NVENC on driver 580 and later needs
   the whole machine.
 - A preempted interruptible instance reads as outbid.
+
+### Changed
+
+- reqwest 0.13. TLS is still rustls, now with the aws-lc-rs provider and the
+  platform certificate verifier instead of bundled webpki roots, so a Linux
+  host needs its CA certificates installed.
